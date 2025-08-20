@@ -1,9 +1,9 @@
-# Schedules a nightly Windows Task to run Nova's nightly job at 2:00 AM
+# Schedules a nightly Windows Task to run Nova's nightly consolidation at 2:00 AM
 param(
     [string]$TaskName = "NovaNightly",
     [string]$WorkingDir = "$PSScriptRoot\..",
     [string]$Python = "python",
-    [string]$Args = "-m nova_core jobs nightly"
+    [string]$Args = "-m ui.cli jobs nightly"
 )
 
 $Action = New-ScheduledTaskAction -Execute $Python -Argument $Args -WorkingDirectory $WorkingDir
