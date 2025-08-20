@@ -45,9 +45,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        shell: pwsh
         run: |
-          if [ -n "${PYPI_TOKEN}" ]; then
-            python -m twine upload -u __token__ -p ${PYPI_TOKEN} dist/*
-          else
+          if ($env:PYPI_TOKEN) {
+            python -m twine upload -u __token__ -p $env:PYPI_TOKEN dist/*
+          }
+          else {
             echo "PYPI_TOKEN not set; skipping publish"
-          fi
+          }
