@@ -23,3 +23,7 @@ def populate_defaults() -> None:
     register("set_reminder", handlers.set_reminder)
     register("search_local_files", handlers.search_local_files)
     register("show_logs", handlers.show_logs)
+    register("open_file", handlers.open_file)
+    register("copy_file", handlers.copy_file)
+    register("move_file", handlers.move_file)
+    register("delete_file", handlers.delete_file)

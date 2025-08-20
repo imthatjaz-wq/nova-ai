@@ -16,6 +16,40 @@ def test_cli_chat_once_noninteractive(monkeypatch) -> None:
     assert "Nova>" in proc.stdout
 
 
+def test_cli_qol_commands(monkeypatch) -> None:
+    monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
+    monkeypatch.setenv("NOVA_PERMISSION_DEFAULT", "deny")
+
+    import subprocess
+    import sys
+
+    # config
+    proc1 = subprocess.run([sys.executable, "-m", "ui.cli", "config"], capture_output=True, text=True)
+    assert proc1.returncode == 0 and "data_dir:" in proc1.stdout
+
+    # recent (should handle empty gracefully)
+    proc2 = subprocess.run([sys.executable, "-m", "ui.cli", "recent"], capture_output=True, text=True)
+    assert proc2.returncode == 0
+
+    # health
+    proc3 = subprocess.run([sys.executable, "-m", "ui.cli", "health"], capture_output=True, text=True)
+    assert proc3.returncode == 0 and "Health checks passed:" in proc3.stdout
+
+    # clear screen (no assertion on output; should not crash)
+    proc4 = subprocess.run([sys.executable, "-m", "ui.cli", "clear"], capture_output=True, text=True)
+    assert proc4.returncode == 0
+
+
+def test_cli_version_matches_package() -> None:
+    import subprocess
+    import sys
+    from importlib.metadata import version
+    pkg_ver = version("nova-assistant")
+    proc = subprocess.run([sys.executable, "-m", "ui.cli", "version"], capture_output=True, text=True)
+    assert proc.returncode == 0
+    assert pkg_ver in proc.stdout
+
+
 def test_cli_bootstrap_creates_logs_and_noninteractive_prompt(monkeypatch, tmp_path) -> None:
     # Use a temp data dir and noninteractive prompt mode
     monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
@@ -44,7 +78,8 @@ def test_cli_jobs_commands_noninteractive(monkeypatch) -> None:
     monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
     monkeypatch.setenv("NOVA_PERMISSION_DEFAULT", "allow")
     # jobs nightly
-    import sys, subprocess
+    import subprocess
+    import sys
     cmd = [sys.executable, "-m", "ui.cli", "jobs", "nightly"]
     p1 = subprocess.run(cmd, capture_output=True, text=True)
     assert p1.returncode == 0
@@ -57,7 +92,8 @@ def test_cli_jobs_commands_noninteractive(monkeypatch) -> None:
 
 
 def test_cli_version_outputs_version() -> None:
-    import sys, subprocess
+    import subprocess
+    import sys
     cmd = [sys.executable, "-m", "ui.cli", "version"]
     p = subprocess.run(cmd, capture_output=True, text=True)
     assert p.returncode == 0
@@ -66,7 +102,8 @@ def test_cli_version_outputs_version() -> None:
 
 def test_cli_diag_outputs(monkeypatch) -> None:
     monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
-    import sys, subprocess
+    import subprocess
+    import sys
     cmd = [sys.executable, "-m", "ui.cli", "diag"]
     p = subprocess.run(cmd, capture_output=True, text=True)
     assert p.returncode == 0
@@ -74,3 +111,33 @@ def test_cli_diag_outputs(monkeypatch) -> None:
     assert "=== Nova Diagnostics ===" in out
     assert "Search provider:" in out
     assert "Policy: data dir=" in out
+
+
+def test_cli_diag_shows_versions_and_counters(monkeypatch) -> None:
+    monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
+    import subprocess
+    import sys
+    cmd = [sys.executable, "-m", "ui.cli", "diag"]
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    assert p.returncode == 0
+    out = p.stdout
+    assert "Libs:" in out
+    assert "HTTP cache entries:" in out
+    assert "Scheduled jobs:" in out
+
+
+def test_cli_diag_json(monkeypatch) -> None:
+    monkeypatch.setenv("NOVA_NONINTERACTIVE", "1")
+    import subprocess
+    import sys
+    proc = subprocess.run([sys.executable, "-m", "ui.cli", "diag", "--json"], capture_output=True, text=True)
+    assert proc.returncode == 0
+    import json
+    data = json.loads(proc.stdout)
+    assert isinstance(data, dict)
+    # minimal expected keys
+    for key in ("version", "env", "data_dir", "http_rate_limit_per_min"):
+        assert key in data
+    # nested http and scheduler keys present
+    assert "http" in data and isinstance(data["http"], dict)
+    assert "scheduler" in data and isinstance(data["scheduler"], dict)

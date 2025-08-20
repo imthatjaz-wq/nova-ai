@@ -25,6 +25,11 @@ def smalltalk(reply: str) -> str:
     return reply
 
 
+def clarify(question: str) -> str:
+    # Short, neutral clarification prompt
+    return question
+
+
 def format_help_banner() -> str:
     return (
         "Nova CLI — local assistant (Segment 1)\n"

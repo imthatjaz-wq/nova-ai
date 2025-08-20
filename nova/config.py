@@ -4,6 +4,24 @@ import os
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 
+# Auto-load a local .env if present (no external dependency)
+_dotenv_path = Path(__file__).resolve().parent.parent / ".env"
+if _dotenv_path.exists():
+    try:
+        with open(_dotenv_path, "r", encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if not s or s.startswith("#"):
+                    continue
+                if "=" in s:
+                    k, v = s.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip('"').strip("'")
+                    os.environ.setdefault(k, v)
+    except Exception:
+        # Fail soft; env remains as-is
+        pass
+
 
 class Settings(BaseModel):
     """Application settings loaded from environment with safe defaults.

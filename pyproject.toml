@@ -1,10 +1,28 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+select = ["E", "F", "I", "UP"]
+ignore = []
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+no_implicit_optional = true
+show_error_codes = true
+pretty = true
+warn_return_any = true
+warn_unreachable = true
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "nova-assistant"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Nova: Local deterministic AI assistant"
 readme = "README.md"
 authors = [{ name = "Nova" }]
@@ -38,6 +56,9 @@ pythonpath = ["."]
 [project.optional-dependencies]
 dev = [
   "pytest>=7.0.0",
+  "pre-commit>=3.6.0",
+  "ruff>=0.6.1",
+  "mypy>=1.10.0",
 ]
 
 [tool.setuptools]
@@ -51,3 +72,6 @@ packages = [
   "ui",
   "security",
 ]
+
+[tool.setuptools.dynamic]
+version = { attr = "nova.__version__" }

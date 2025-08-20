@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from nova.permissions import request_permission, Decision
+from nova.permissions import request_permission, Decision, interactive_prompt
 from security import policies
 from nova import scheduler
 import os
@@ -33,7 +33,7 @@ def open_app(name: str) -> str:
 
 
 def set_reminder(seconds: int, message: str) -> str:
-    scheduler.schedule_once(seconds, lambda: None)
+    scheduler.schedule_once(seconds, lambda: scheduler.alert(message))
     return f"[scheduled] in {seconds}s: {message}"
 
 
@@ -62,3 +62,55 @@ def show_logs() -> str:
     if not files:
         return "[ok] no log files"
     return "\n".join(str(f) for f in files)
+
+
+def open_file(path: str) -> str:
+    p = Path(path)
+    if not p.exists() or not p.is_file():
+        return f"[error] file not found: {p}"
+    return f"[dry-run] Would open file: {p}"
+
+
+def copy_file(src: str, dst: str) -> str:
+    s = Path(src)
+    d = Path(dst)
+    if not s.exists() or not s.is_file():
+        return f"[error] source not found: {s}"
+    decision = request_permission(action="copy file", resource=f"{s} -> {d}", path=d)
+    if decision is not Decision.APPROVED:
+        return f"[denied] copy_file {s} -> {d}"
+    if policies.requires_elevation_for_path(d):
+        return f"[approved] Would copy (elev needed) {s} -> {d}"
+    return f"[approved] Would copy {s} -> {d}"
+
+
+def move_file(src: str, dst: str) -> str:
+    s = Path(src)
+    d = Path(dst)
+    if not s.exists() or not s.is_file():
+        return f"[error] source not found: {s}"
+    decision = request_permission(action="move file", resource=f"{s} -> {d}", path=d)
+    if decision is not Decision.APPROVED:
+        return f"[denied] move_file {s} -> {d}"
+    if policies.requires_elevation_for_path(d):
+        return f"[approved] Would move (elev needed) {s} -> {d}"
+    return f"[approved] Would move {s} -> {d}"
+
+
+def delete_file(path: str) -> str:
+    p = Path(path)
+    if not p.exists() or not p.is_file():
+        return f"[error] file not found: {p}"
+    decision = request_permission(action="delete file", resource=str(p), path=p)
+    if decision is not Decision.APPROVED:
+        return f"[denied] delete_file {p}"
+    # Double-confirm destructive action
+    noninteractive = os.getenv("NOVA_NONINTERACTIVE", "0").lower() in ("1", "true", "yes")
+    if noninteractive:
+        return f"[cancelled] delete_file {p}"
+    sure = interactive_prompt(f"Confirm delete {p}?", default=False)
+    if not sure:
+        return f"[cancelled] delete_file {p}"
+    if policies.requires_elevation_for_path(p):
+        return f"[approved] Would delete (elev needed) {p}"
+    return f"[approved] Would delete {p}"

@@ -1,0 +1,2 @@
+You> hello
+Nova> Hi there! How can I help?

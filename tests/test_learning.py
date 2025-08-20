@@ -18,10 +18,13 @@ def test_gap_detection_and_research(monkeypatch) -> None:
     gaps = find_gaps(ltm)
     assert gaps and "Atlantis" in gaps[0]
 
-    def fake_search(q):
-        return [{"name": "Mythical Atlantis", "snippet": "City in legend.", "url": "https://en.wikipedia.org/wiki/Atlantis"}]
+    def fake_aggregate(q):
+        return (
+            "Atlantis is a legendary island.",
+            [{"name": "Wikipedia", "snippet": "City in legend.", "url": "https://en.wikipedia.org/wiki/Atlantis"}],
+        )
 
-    with patch("nova.jobs.search_web", side_effect=fake_search):
+    with patch("nova.jobs.aggregate_sources", side_effect=fake_aggregate):
         count = run_gap_research(ltm, max_items=1)
         assert count == 1
         # fact saved with source
